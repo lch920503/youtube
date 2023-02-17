@@ -1,70 +1,92 @@
-# Getting Started with Create React App
+# 프로젝트 정보
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+- youtube api를 이용해 YouTube 사이트 클론
 
-## Available Scripts
+## 구현 사항
 
-In the project directory, you can run:
+### Mock Data를 이용해 개발하는 방법.
 
-### `npm start`
+- class를 이용해 constructor로 baseURL url 연결
+- ApiContext 파일에서 실제 data와 Mock data의 인스턴스를 필요에 맞게 사용
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+```javascript
+import { createContext, useContext } from "react";
+import FakeYoutube from "../api/fakeYoutube";
+import Youtube from "../api/youtube";
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+export const YoutubeApiContext = createContext();
 
-### `npm test`
+const youtube = new Youtube();
+// const youtube = new FakeYoutube();
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+export function YoutubeApiProvider({ children }) {
+  return (
+    <YoutubeApiContext.Provider value={{ youtube }}>
+      {children}
+    </YoutubeApiContext.Provider>
+  );
+}
 
-### `npm run build`
+export function useYoutubeApi() {
+  return useContext(YoutubeApiContext);
+}
+```
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+### useEffect hook을 이용한 검색 기능 구현.
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+- useParams()를 이용해서 url의 keyword 가져오기
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+```javascript
+useEffect(() => {
+  setText(keyword || "");
+}, [keyword]);
+```
 
-### `npm run eject`
+### Tanstack query로 네트워크 통신.
 
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
+- data fetching을 위해 staleTime 설정
 
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+```javascript
+const {
+  isLoading,
+  error,
+  data: videos,
+} = useQuery(["videos", keyword], () => youtube.search(keyword), {
+  staleTime: 1000 * 60 * 1,
+});
+```
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
+### Tailwind CSS 세팅 방법
 
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
+- 사용자 지정 className 사용하기 위해 extend에 원하는 속성 지정하기
 
-## Learn More
+```javascript
+/** @type {import('tailwindcss').Config} */
+module.exports = {
+  content: ["./src/**/*.{js,jsx}"],
+  theme: {
+    extend: {
+      colors: {
+        brand: "#ff0000",
+      },
+    },
+  },
+  plugins: [require("@tailwindcss/line-clamp")],
+};
+```
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+### 상세페이지
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+- iframe 태그를 이용한 player 설정
 
-### Code Splitting
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
-
-### Analyzing the Bundle Size
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
-
-### Making a Progressive Web App
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
-
-### Advanced Configuration
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
-
-### Deployment
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
-
-### `npm run build` fails to minify
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+```javascript
+<iframe
+  id="player"
+  type="text/html"
+  width="100%"
+  height="640"
+  src={`https://www.youtube.com/embed/${video.id}`}
+  frameBorder="0"
+  title={title}
+/>
+```
